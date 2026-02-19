@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventario - Mi CHUY´S</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .form-agregar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            display: flex; gap: 10px; flex-wrap: wrap;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .form-agregar input { padding: 10px; border: 1px solid #ddd; border-radius: 4px; flex: 1; }
+        .btn-guardar { background-color: #27ae60; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 4px; font-weight: bold; }
+        
+        /* Botones de acción */
+        .btn-borrar { background-color: #e74c3c; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px; }
+        .btn-editar { background-color: #3498db; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px; margin-right: 5px;}
+        .btn-editar:hover { background-color: #2980b9; }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="navbar-logo">
+            <img src="{{ url_for('static', filename='mg/logo.png') }}" alt="Logo" class="logo-mini">
+            <span>Tienda Mi Chuy</span>
+        </div>
+        <ul class="navbar-links">
+            <li><a href="/">🛒 Ventas</a></li>
+            <li><a href="/inventario" class="active">📦 Inventario</a></li>
+            <li><a href="/reportes">📊 Reportes</a></li>
+            <li><a href="/ajustes">⚙️ Ajustes</a></li>
+        </ul>
+    </nav>
+
+    <div class="contenedor">
+        <header>
+            <h1>Gestión de Inventario</h1>
+        </header>
+
+        <div class="form-agregar">
+            <input type="text" id="codigo" placeholder="Código de Barras" required>
+            <input type="text" id="nombre" placeholder="Nombre del Producto" required>
+            <input type="number" id="precio" placeholder="Precio $" step="0.50" required>
+            <input type="number" id="stock" placeholder="Stock Inicial" required>
+            <button class="btn-guardar" onclick="agregarProducto()">+ Agregar Producto</button>
+        </div>
+
+        <section class="panel-tabla">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Nombre</th>
+                        <th>Precio</th>
+                        <th>Stock</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-inventario"></tbody>
+            </table>
+        </section>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', cargarInventario);
+
+        function cargarInventario() {
+            fetch('/api/inventario/listar')
+                .then(res => res.json())
+                .then(data => {
+                    const tbody = document.getElementById('tabla-inventario');
+                    tbody.innerHTML = '';
+                    data.forEach(prod => {
+                        tbody.innerHTML += `
+                            <tr>
+                                <td>${prod.codigo}</td>
+                                <td>${prod.nombre}</td>
+                                <td>$${prod.precio}</td>
+                                <td style="font-weight:bold; color:#2c3e50;">${prod.stock}</td>
+                                <td>
+                                    <button class="btn-editar" onclick="editarStock('${prod.codigo}', ${prod.stock})">Editar Stock</button>
+                                    <button class="btn-borrar" onclick="eliminarProducto('${prod.codigo}')">Eliminar</button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                });
+        }
+
+        function agregarProducto() {
+            const codigo = document.getElementById('codigo').value;
+            const nombre = document.getElementById('nombre').value;
+            const precio = document.getElementById('precio').value;
+            const stock = document.getElementById('stock').value;
+
+            if(!codigo || !nombre || !precio || !stock) { alert("Llena todos los campos"); return; }
+
+            fetch('/api/inventario/agregar', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({codigo, nombre, precio, stock})
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.exito) {
+                    alert("Producto agregado!");
+                    cargarInventario();
+                    document.getElementById('codigo').value = '';
+                    document.getElementById('nombre').value = '';
+                    document.getElementById('precio').value = '';
+                    document.getElementById('stock').value = '';
+                } else { alert("Error: " + data.msg); }
+            });
+        }
+
+        // --- FUNCIÓN DE ELIMINAR BLINDDAJE ---
+        function eliminarProducto(codigo) {
+            let password = prompt("⚠️ ZONA SEGURA ⚠️\nPara eliminar, ingresa la contraseña de administrador:");
+            
+            if (password !== null && password !== "") {
+                if(confirm("¿Seguro que deseas eliminarlo permanentemente?")) {
+                    fetch('/api/inventario/eliminar', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({codigo: codigo, password: password})
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if(data.exito) { 
+                            alert("Producto eliminado."); 
+                            cargarInventario(); 
+                        } else {
+                            alert("⛔ ACCESO DENEGADO: " + data.msg);
+                        }
+                    });
+                }
+            }
+        }
+
+        // --- FUNCIÓN DE EDITAR STOCK BLINDADO ---
+        function editarStock(codigo, stockActual) {
+            let password = prompt("⚠️ ZONA SEGURA ⚠️\nPara modificar el inventario, ingresa la contraseña:");
+            
+            if (password !== null && password !== "") {
+                let nuevoStock = prompt(`El stock actual es: ${stockActual}\n\nIngresa la NUEVA cantidad correcta:`, stockActual);
+                
+                if (nuevoStock !== null && nuevoStock.trim() !== "") {
+                    fetch('/api/inventario/actualizar_stock', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({codigo: codigo, nuevo_stock: nuevoStock, password: password}) // Enviamos la contraseña al backend
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if(data.exito) {
+                            alert("¡Stock actualizado con éxito!");
+                            cargarInventario();
+                        } else {
+                            alert("⛔ ACCESO DENEGADO: " + (data.msg || "Error desconocido"));
+                        }
+                    });
+                }
+            }
+        }
+    </script>
+</body>
+</html>

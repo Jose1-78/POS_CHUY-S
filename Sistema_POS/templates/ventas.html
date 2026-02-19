@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Punto de Venta - Mi CHUY´S</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="navbar-logo">
+            <img src="{{ url_for('static', filename='mg/logo.png') }}" alt="Logo" class="logo-mini">
+            <span>Tienda Mi Chuy</span>
+        </div>
+        <ul class="navbar-links">
+             <li><a href="/" class="active">🛒 Ventas</a></li>
+             <li><a href="/inventario">📦 Inventario</a></li>
+             <li><a href="/reportes">📊 Reportes</a></li>
+             <li><a href="/ajustes">⚙️ Ajustes</a></li>
+        </ul>
+    </nav>
+
+    <div class="contenedor">
+        <header>
+            <h1>Bienvenido al Sistema de Ventas de Mi CHUY´S</h1>
+            <div id="reloj">00:00:00</div>
+        </header>
+
+        <section class="panel-scanner">
+            <input type="text" id="input-codigo" placeholder="Escanea el código aquí..." autofocus autocomplete="off">
+            <button onclick="buscarProductoManual()">Buscar</button>
+        </section>
+
+        <section class="panel-tabla">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th>Precio</th>
+                        <th>Cant.</th>
+                        <th>Total</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody id="cuerpo-tabla">
+                    </tbody>
+            </table>
+        </section>
+
+        <footer>
+            <div class="total-box">
+                Total: $<span id="gran-total">0.00</span>
+            </div>
+            <button class="btn-cobrar" onclick="finalizarVenta()">COBRAR (F12)</button>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

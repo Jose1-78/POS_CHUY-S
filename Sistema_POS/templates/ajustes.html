@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PUNTO DE VENTA</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="navbar-logo">
+            <img src="{{ url_for('static', filename='mg/logo.png') }}" alt="Logo" class="logo-mini">
+            <span>Mi CHUY´S</span>
+        </div>
+        <ul class="navbar-links">
+            <li><a href="/">🛒 Ventas</a></li>
+            <li><a href="/inventario">📦 Inventario</a></li>
+            <li><a href="/reportes">📊 Reportes</a></li>
+            <li><a href="/ajustes" class="active">⚙️ Ajustes</a></li>
+        </ul>
+    </nav>
+
+    <div class="contenedor text-center">
+        <header>
+            <h1>Configuración del Sistema</h1>
+        </header>
+
+        <section class="panel-ajustes">
+            <h2>Cambiar Contraseña de Administrador</h2>
+            <p class="texto-descriptivo">Esta contraseña se usa para eliminar productos del inventario.</p>
+            
+            <div class="grupo-input">
+                <label>Contraseña Actual</label>
+                <input type="password" id="pass-actual" placeholder="Escribe la contraseña actual">
+            </div>
+            
+            <div class="grupo-input">
+                <label>Nueva Contraseña</label>
+                <input type="password" id="pass-nueva" placeholder="Mínimo 4 caracteres">
+            </div>
+
+            <div class="grupo-input">
+                <label>Confirmar Nueva Contraseña</label>
+                <input type="password" id="pass-confirmar" placeholder="Repite la nueva contraseña">
+            </div>
+
+            <button class="btn-guardar-ajustes" onclick="guardarPassword()">Actualizar Contraseña</button>
+        </section>
+    </div>
+
+    <script>
+        function guardarPassword() {
+            const actual = document.getElementById('pass-actual').value;
+            const nueva = document.getElementById('pass-nueva').value;
+            const confirmar = document.getElementById('pass-confirmar').value;
+
+            if(!actual || !nueva || !confirmar) {
+                alert("Por favor llena todos los campos.");
+                return;
+            }
+            if(nueva !== confirmar) {
+                alert("⛔ Las contraseñas nuevas NO coinciden. Revisa bien.");
+                return;
+            }
+            if(nueva.length < 4) {
+                alert("La nueva contraseña debe tener al menos 4 caracteres.");
+                return;
+            }
+
+            fetch('/api/ajustes/cambiar_password', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ actual: actual, nueva: nueva })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.exito) {
+                    alert("✅ ¡ÉXITO!\n" + data.msg);
+                    document.getElementById('pass-actual').value = '';
+                    document.getElementById('pass-nueva').value = '';
+                    document.getElementById('pass-confirmar').value = '';
+                } else {
+                    alert("⛔ ERROR:\n" + data.msg);
+                }
+            });
+        }
+    </script>
+</body>
+</html>

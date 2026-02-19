@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reportes de Venta</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="navbar-logo">
+            <img src="{{ url_for('static', filename='mg/logo.png') }}" alt="Logo" class="logo-mini">
+            <span>Tienda Mi Chuy</span>
+        </div>
+        <ul class="navbar-links">
+            <li><a href="/">🛒 Ventas</a></li>
+            <li><a href="/inventario">📦 Inventario</a></li>
+            <li><a href="/reportes" class="active">📊 Reportes</a></li>
+            <li><a href="/ajustes">⚙️ Ajustes</a></li>
+        </ul>
+    </nav>
+
+    <div class="contenedor">
+        <header>
+            <h1>Historial de Ventas</h1>
+        </header>
+
+        <section class="panel-filtros">
+            <label for="fecha-reporte"><strong>Seleccionar Día:</strong></label>
+            <input type="date" id="fecha-reporte" class="input-fecha">
+            <button onclick="cargarReporte()" class="btn-buscar">🔍 Buscar Ventas</button>
+        </section>
+
+        <section class="cards-resumen">
+            <div class="card">
+                <h3>Ventas Totales del Día</h3>
+                <p id="resumen-total" class="dinero">$0.00</p>
+            </div>
+            <div class="card">
+                <h3>Transacciones</h3>
+                <p id="resumen-cantidad">0</p>
+            </div>
+        </section>
+
+        <section class="panel-tabla">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Hora</th>
+                        <th>Productos (Resumen)</th>
+                        <th>Total Venta</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-reportes">
+                    <tr><td colspan="3" class="text-center">Selecciona una fecha para ver datos</td></tr>
+                </tbody>
+            </table>
+        </section>
+    </div>
+
+    <script>
+        function cargarReporte() {
+            const fecha = document.getElementById('fecha-reporte').value;
+            if(!fecha) { alert("Por favor selecciona una fecha"); return; }
+
+            fetch('/api/obtener_reporte', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({fecha: fecha})
+            })
+            .then(response => response.json())
+            .then(data => {
+                // 1. Actualizar Tarjetas
+                document.getElementById('resumen-total').innerText = '$' + data.total_dia.toFixed(2);
+                document.getElementById('resumen-cantidad').innerText = data.lista_ventas.length;
+
+                // 2. Llenar Tabla
+                const tbody = document.getElementById('tabla-reportes');
+                tbody.innerHTML = '';
+                
+                if(data.lista_ventas.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="3" class="text-center">No hubo ventas este día.</td></tr>';
+                    return;
+                }
+
+                data.lista_ventas.forEach(venta => {
+                    let fila = `<tr>
+                        <td>${venta.hora}</td>
+                        <td><small>${venta.items}</small></td>
+                        <td class="text-bold">$${venta.total}</td>
+                    </tr>`;
+                    tbody.innerHTML += fila;
+                });
+            });
+        }
+        
+        document.getElementById('fecha-reporte').valueAsDate = new Date();
+    </script>
+</body>
+</html>
